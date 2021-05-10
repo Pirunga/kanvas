@@ -1,8 +1,11 @@
 from django.shortcuts import render
 from djando.contrib.auth.models import User
-from users.serializers import UserSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from users.serializers import UserSerializer, CourseSerializer
+from users.models import Course, Activity
+from users.permissions import CoursePermission
 
 
 class UserView(APIView):
@@ -22,17 +25,25 @@ class UserView(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-class LoginView(APIView):
-    def post(self, request):
-        ...
-
-
 class CourseView(APIView):
+    authentication_classes = [TokenAuthentication]
+
+    permission_classes = [IsAuthenticated, CoursePermission]
+
     def get(self):
         ...
 
     def post(self, request):
-        ...
+        data = request.data
+
+        serializer = CourseSerializer(data=data)
+
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        course = Course.objects.create(**serializer.data, user_id=request.user.id)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request):
         ...

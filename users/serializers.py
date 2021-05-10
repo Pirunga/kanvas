@@ -7,3 +7,9 @@ class UserSerializer(serializers.Serializers):
     password = serializers.CharField(write_only=True)
     is_superuser = serializers.BooleanField(required=True)
     is_staff = serializers.BooleanField(required=True)
+
+
+class CourseSerializer(serializers.Serializers):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField()
+    user_set = UserSerializer(read_only=True, many=True)
