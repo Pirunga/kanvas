@@ -3,7 +3,7 @@ from djando.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from users.serializers import UserSerializer, CourseSerializer
+from users.serializers import UserSerializer, CourseSerializer, CourseStudentsSerializer
 from users.models import Course, Activity
 from users.permissions import CoursePermission
 
@@ -43,10 +43,36 @@ class CourseView(APIView):
 
         course = Course.objects.create(**serializer.data, user_id=request.user.id)
 
+        serializer = CourseSerializer(course)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request):
-        ...
+        data = request.data
+
+        course = get_object_or_404(Course, id=data["course_id"])
+
+        serializer = CourseStudentsSerializer(data=data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        users_id = serializer.data["users_id"]
+
+        for user in course.user_set.all():
+            if user.id not in users_id:
+                course.user_set.remove(user)
+
+        course_users_id = [user.id for user in Course.user_set.all()]
+
+        for user_id in users_id:
+            if user_id not in course_users_id:
+                user = User.objects.get(id=user_id)
+                course.user_set.add(user)
+
+        serializer = CourseSerializer(course)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request):
         ...
