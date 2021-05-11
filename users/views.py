@@ -26,14 +26,15 @@ class UserView(APIView):
 
 
 class CourseView(APIView):
-    authentication_classes = [TokenAuthentication]
-
-    permission_classes = [IsAuthenticated, CoursePermission]
-
     def get(self):
-        ...
+        all_courses = [CourseSerializer(course) for course in Course.objects.all()]
+
+        return Response(all_courses, status=status.HTTP_200_OK)
 
     def post(self, request):
+        authentication_classes = [TokenAuthentication]
+        permission_classes = [IsAuthenticated, CoursePermission]
+
         data = request.data
 
         serializer = CourseSerializer(data=data)
@@ -48,6 +49,9 @@ class CourseView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request):
+        authentication_classes = [TokenAuthentication]
+        permission_classes = [IsAuthenticated, CoursePermission]
+
         data = request.data
 
         course = get_object_or_404(Course, id=data["course_id"])
@@ -74,16 +78,16 @@ class CourseView(APIView):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, request):
-        ...
-
 
 class ActivityView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        ...
+
     def post(self, request):
         ...
 
     def put(self, request):
-        ...
-
-    def get(self, request):
         ...
