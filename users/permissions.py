@@ -18,5 +18,5 @@ class CoursePermission(BasePermission):
 
         staff = request.user.is_staff
 
-        if superuser and staff:
+        if request.user and superuser and staff:
             return True

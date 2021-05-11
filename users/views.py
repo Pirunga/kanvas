@@ -1,8 +1,10 @@
 from django.shortcuts import render, get_object_or_404
-from djando.contrib.auth.models import User
+from django.contrib.auth.models import User
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 from users.serializers import (
     UserSerializer,
     CourseSerializer,
@@ -15,30 +17,36 @@ from users.permissions import CoursePermission
 
 class UserView(APIView):
     def post(self, request):
-        serializer = UserSerializer(request.data)
+        serializer = UserSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = request.data
 
-        if User.objects.get(username=data.username):
+        try:
+            user = User.objects.get(username=data["username"])
+
             return Response(status=status.HTTP_409_CONFLICT)
 
-        user = User.objects.create(**data)
+        except User.DoesNotExist:
+            user = User.objects.create_user(**data)
 
-        return Response(status=status.HTTP_201_CREATED)
+            serializer = UserSerializer(user)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class CourseView(APIView):
-    def get(self):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [CoursePermission]
+
+    def get(self, request):
         all_courses = [CourseSerializer(course).data for course in Course.objects.all()]
 
         return Response(all_courses, status=status.HTTP_200_OK)
 
     def post(self, request):
-        authentication_classes = [TokenAuthentication]
-        permission_classes = [IsAuthenticated, CoursePermission]
 
         data = request.data
 
@@ -47,16 +55,15 @@ class CourseView(APIView):
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        course = Course.objects.create(**serializer.data, user_id=request.user.id)
+        course = Course.objects.create(**serializer.data)
 
         serializer = CourseSerializer(course)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def put(self, request):
-        authentication_classes = [TokenAuthentication]
-        permission_classes = [IsAuthenticated, CoursePermission]
 
+class CourseStudentRegistration(APIView):
+    def put(self, request):
         data = request.data
 
         course = get_object_or_404(Course, id=data["course_id"])
@@ -66,13 +73,13 @@ class CourseView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        users_id = serializer.data["users_id"]
+        users_id = data.pop("user_ids")
 
         for user in course.user_set.all():
             if user.id not in users_id:
                 course.user_set.remove(user)
 
-        course_users_id = [user.id for user in Course.user_set.all()]
+        course_users_id = [user.id for user in course.user_set.all()]
 
         for user_id in users_id:
             if user_id not in course_users_id:
@@ -118,7 +125,7 @@ class ActivityView(APIView):
         if user.is_staff:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        activity = Activity.objects.create(repo=data["repo"], user_id=user.id)
+        activity = Activity.objects.get_or_create(repo=data["repo"], user=user)[0]
 
         serializer = ActivitySerializer(activity)
 
@@ -134,7 +141,9 @@ class ActivityView(APIView):
 
         activity = get_object_or_404(Activity, id=data["id"])
 
-        activity.grade.add(data["grade"])
+        activity.grade = data["grade"]
+
+        activity.save()
 
         serializer = ActivitySerializer(activity)
 
@@ -145,18 +154,18 @@ class ActivityFilterByStudentView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, student_id):
+    def get(self, request, user_id):
         user = request.user
 
-        if not user.is_superuser:
+        if not user.is_staff:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-            student = User.objects.get(user_id=student_id)
+            student = User.objects.get(id=user_id)
 
             student_activities = [
                 ActivitySerializer(activity).data
-                for activity in Activity.objects.get(user_id=student.id)
+                for activity in Activity.objects.filter(user=student)
             ]
 
             return Response(student_activities, status=status.HTTP_200_OK)
