@@ -32,7 +32,7 @@ class UserView(APIView):
 
 class CourseView(APIView):
     def get(self):
-        all_courses = [CourseSerializer(course) for course in Course.objects.all()]
+        all_courses = [CourseSerializer(course).data for course in Course.objects.all()]
 
         return Response(all_courses, status=status.HTTP_200_OK)
 
@@ -89,7 +89,21 @@ class ActivityView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        ...
+        user = request.user
+
+        if not user.is_staff:
+            student_activities = [
+                ActivitySerializer(activity).data
+                for activity in Activity.objects.filter(user_id=user.id)
+            ]
+
+            return Response(student_activities, status=status.HTTP_200_OK)
+
+        all_activities = [
+            ActivitySerializer(activity).data for activity in Activity.objects.all()
+        ]
+
+        return Response(all_activities, status=status.HTTP_200_OK)
 
     def post(self, request):
         data = request.data
