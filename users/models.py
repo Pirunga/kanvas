@@ -12,7 +12,7 @@ class Course(models.Model):
 
 
 class Activity(models.Model):
-    repo = models.CharField(max_length=255)
+    repo = models.CharField(max_length=255, unique=True)
     grade = models.FloatField(null=True, blank=True, default=None)
 
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
