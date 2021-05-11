@@ -3,7 +3,12 @@ from djando.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from users.serializers import UserSerializer, CourseSerializer, CourseStudentsSerializer
+from users.serializers import (
+    UserSerializer,
+    CourseSerializer,
+    CourseStudentsSerializer,
+    ActivitySerializer,
+)
 from users.models import Course, Activity
 from users.permissions import CoursePermission
 
@@ -87,7 +92,27 @@ class ActivityView(APIView):
         ...
 
     def post(self, request):
-        ...
+        data = request.data
+
+        serializer = ActivitySerializer(data=data)
+
+        if not serializer:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+
+        if user.is_staff:
+            activity = Activity.objects.create(**serializer.data, user_id=user.id)
+
+            serializer = ActivitySerializer(activity)
+
+            return Response(serializer.dta, status=status.HTTP_201_CREATED)
+
+        activity = Activity.objects.create(repo=data["repo"], user_id=user.id)
+
+        serializer = ActivitySerializer(activity)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request):
         ...
