@@ -141,7 +141,7 @@ class ActivityView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class ActivityFilerByStudent(APIView):
+class ActivityFilterByStudentView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
