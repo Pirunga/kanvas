@@ -139,3 +139,29 @@ class ActivityView(APIView):
         serializer = ActivitySerializer(activity)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ActivityFilerByStudent(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id):
+        user = request.user
+
+        if not user.is_superuser:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            student = User.objects.get(user_id=student_id)
+
+            student_activities = [
+                ActivitySerializer(activity).data
+                for activity in Activity.objects.get(user_id=student.id)
+            ]
+
+            return Response(student_activities, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Invalid user_id."}, status=status.HTTP_404_NOT_FOUND
+            )
