@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from djando.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
@@ -102,11 +102,7 @@ class ActivityView(APIView):
         user = request.user
 
         if user.is_staff:
-            activity = Activity.objects.create(**serializer.data, user_id=user.id)
-
-            serializer = ActivitySerializer(activity)
-
-            return Response(serializer.dta, status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         activity = Activity.objects.create(repo=data["repo"], user_id=user.id)
 
@@ -115,4 +111,17 @@ class ActivityView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request):
-        ...
+        user = request.user
+
+        if not user.is_staff:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        data = request.data
+
+        activity = get_object_or_404(Activity, id=data["id"])
+
+        activity.grade.add(data["grade"])
+
+        serializer = ActivitySerializer(activity)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
