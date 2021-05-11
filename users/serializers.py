@@ -34,4 +34,4 @@ class ActivitySerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     user_id = serializers.IntegerField(read_only=True)
     repo = serializers.CharField()
-    grade = serializers.FloatField(null=True, blank=True, default=None)
+    grade = serializers.FloatField(null=True, blank=True, default=null)
