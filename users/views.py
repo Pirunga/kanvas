@@ -63,6 +63,9 @@ class CourseView(APIView):
 
 
 class CourseStudentRegistration(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [CoursePermission]
+
     def put(self, request):
         data = request.data
 
@@ -75,9 +78,7 @@ class CourseStudentRegistration(APIView):
 
         users_id = data.pop("user_ids")
 
-        for user in course.user_set.all():
-            if user.id not in users_id:
-                course.user_set.remove(user)
+        course.user_set.clear()
 
         course_users_id = [user.id for user in course.user_set.all()]
 

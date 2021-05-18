@@ -51,7 +51,7 @@ test_instructor_can_create_course (test_api.TestCourseView) ... ok
 test_instructor_can_register_students_on_course (test_api.TestCourseView) ... ok
 
 ----------------------------------------------------------------------
-Ran 17 tests in 13.106s
+Ran 17 tests in 10.145s
 
 OK
 Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
