@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 
 
 class UserSerializer(serializers.Serializer):
@@ -19,11 +20,12 @@ class CourseSerializer(serializers.Serializer):
 class CourseStudentsSerializer(serializers.Serializer):
     user_ids = serializers.ListField(child=serializers.IntegerField())
 
-    def validate_users_ids(self, value):
+    def validate_user_ids(self, value):
         for user_id in value:
-            user = User.objects.get(id=user_id)
+            try:
+                user = User.objects.get(id=user_id)
 
-            if not user:
+            except User.DoesNotExist:
                 raise serializers.ValidationError("Student/Facilitador not found")
 
 
